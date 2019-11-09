@@ -8,7 +8,7 @@ func Evaluate(required_keys []string, values map[string]interface{}, condition s
 	if CheckValidValues(required_keys, values) {
 		expression, err := govaluate.NewEvaluableExpression(condition)
 		result, err := expression.Evaluate(values)
-		return err != nil && result.(bool)
+		return err == nil && result.(bool)
 	} else {
 		return false
 	}
