@@ -1,23 +1,25 @@
 package couponEvaluator
 
 import (
-	"fmt"
-
 	"github.com/Knetic/govaluate"
 )
 
-func Evaluate(required_keys []string, values map[string]interface{}, condition string) bool {
-	applies := false
+func Evaluate(required_keys []string, values map[string]interface{}, condition string) (bool, error) {
 	if CheckValidValues(required_keys, values) {
 		expression, err := govaluate.NewEvaluableExpression(condition)
-		result, err := expression.Evaluate(values)
 		if err != nil {
-			fmt.Println("ERROR: ", err)
+			return false, err
 		} else {
-			applies = result.(bool)
+			result, err := expression.Evaluate(values)
+			if err != nil {
+				return false, err
+			} else {
+				return result.(bool), nil
+			}
 		}
+	} else {
+		return false, nil
 	}
-	return applies
 }
 
 func CheckValidValues(required_keys []string, values map[string]interface{}) bool {
