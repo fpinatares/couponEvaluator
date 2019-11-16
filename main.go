@@ -3,10 +3,12 @@ package couponEvaluator
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 )
 
 // Global variables
@@ -33,7 +35,18 @@ func Evaluate(requiredKeys []string, values map[string]interface{}, condition st
 	if response == nil {
 		return false
 	}
-	return bool(response)
+	return ConvertToBoolean(response)
+}
+
+func ConvertToBoolean(data []byte) bool {
+	boleanToReturn, err := strconv.ParseBool(string(data))
+	valid := (err == nil)
+	if valid {
+		return boleanToReturn
+	} else {
+		log.Println("Invalid response")
+		return false
+	}
 }
 
 func loadConfiguration() {
@@ -58,27 +71,36 @@ func MakeBody(requiredKeys []string, values map[string]interface{}, condition st
 
 func doPost(url string, headers map[string]string, body *bytes.Buffer) []byte {
 	client := &http.Client{}
-	request, err := http.NewRequest("POST", url, body)
+	request, _ := http.NewRequest("POST", url, body)
 	for key, value := range headers {
 		request.Header.Add(key, value)
 	}
-	response, err := client.Do(request)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	} else {
-		defer response.Body.Close()
-		contents, err := ioutil.ReadAll(response.Body)
+	c1 := make(chan []byte, 1)
+	go func() {
+		response, err := client.Do(request)
 		if err != nil {
-			fmt.Println(err)
-		}
-		if response.StatusCode != http.StatusOK {
-			fmt.Println(response.StatusCode)
-			hdr := response.Header
-			for key, value := range hdr {
-				fmt.Println("   ", key, ":", value)
+			log.Println(err)
+			c1 <- nil
+		} else {
+			defer response.Body.Close()
+			contents, err := ioutil.ReadAll(response.Body)
+			if err != nil {
+				log.Println(err)
 			}
+			if response.StatusCode != http.StatusOK {
+				log.Println(response.StatusCode)
+				hdr := response.Header
+				for key, value := range hdr {
+					log.Println("   ", key, ":", value)
+				}
+			}
+			c1 <- contents
 		}
-		return contents
+	}()
+	select {
+	case result := <-c1:
+		return result
+	case <-time.After(10000 * time.Millisecond):
+		return nil
 	}
 }
