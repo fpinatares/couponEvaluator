@@ -25,17 +25,11 @@ type Configuration struct {
 
 // Functions
 func Evaluate(requiredKeys []string, values map[string]interface{}, condition string) string {
-	fmt.Println(0)
 	loadConfiguration()
-	fmt.Println(1)
 	bodyToEvaluate := MakeBody(requiredKeys, values, "total < amount")
-	fmt.Println(2)
 	headers := MakeHeaders()
-	fmt.Println(3)
 	evaluateEndpoint := "/evaluate"
-	fmt.Println(4)
 	response := doPost(configuration.Server+evaluateEndpoint, headers, bodyToEvaluate)
-	fmt.Println(5)
 	return string(response)
 }
 
