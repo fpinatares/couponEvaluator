@@ -1,4 +1,4 @@
-package couponEvaluator
+package couponsEvaluator
 
 import (
 	"bytes"
@@ -12,21 +12,21 @@ import (
 // Global variables
 var configuration Configuration
 
+// Structs
+type Configuration struct {
+	Server string
+}
+
 type EvaluationBody struct {
 	RequiredKeys []string               `json:"required_keys"`
 	Values       map[string]interface{} `json:"values"`
 	Condition    string                 `json:"condition"`
 }
 
-// Structs
-type Configuration struct {
-	Server string
-}
-
 // Functions
 func Evaluate(requiredKeys []string, values map[string]interface{}, condition string) string {
 	loadConfiguration()
-	bodyToEvaluate := MakeBody(requiredKeys, values, "total < amount")
+	bodyToEvaluate := MakeBody(requiredKeys, values, condition)
 	headers := MakeHeaders()
 	evaluateEndpoint := "/evaluate"
 	response := doPost(configuration.Server+evaluateEndpoint, headers, bodyToEvaluate)
@@ -34,15 +34,7 @@ func Evaluate(requiredKeys []string, values map[string]interface{}, condition st
 }
 
 func loadConfiguration() {
-	file, _ := os.Open("config/config.json")
-	defer file.Close()
-	decoder := json.NewDecoder(file)
-	configuration = Configuration{}
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		fmt.Println(err)
-	}
-	configuration.Server = "http://localhost:8082"
+	configuration.Server = os.Getenv("COUPONS_SERVER")
 }
 
 func MakeHeaders() map[string]string {
