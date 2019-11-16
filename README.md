@@ -1,5 +1,5 @@
 # couponEvaluator
-This repository will contain a package which provides the functionalities needed to evaluate a coupon for "Coupons"
+This repository contains a package which provides the functionalities needed to evaluate a coupon for "Coupons"
 
 ## Installation
 
