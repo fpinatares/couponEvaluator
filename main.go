@@ -1,4 +1,4 @@
-package couponEvaluator
+package main
 
 import (
 	"bytes"
@@ -42,6 +42,7 @@ func loadConfiguration() {
 	if err != nil {
 		fmt.Println(err)
 	}
+	configuration.Server = "http://localhost:8082"
 }
 
 func MakeHeaders() map[string]string {
