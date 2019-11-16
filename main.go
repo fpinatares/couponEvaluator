@@ -1,33 +1,35 @@
 package couponEvaluator
 
 import (
-	"github.com/Knetic/govaluate"
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
 )
 
-func Evaluate(required_keys []string, values map[string]interface{}, condition string) (bool, error) {
-	if CheckValidValues(required_keys, values) {
-		expression, err := govaluate.NewEvaluableExpression(condition)
-		if err != nil {
-			return false, err
-		} else {
-			result, err := expression.Evaluate(values)
-			if err != nil {
-				return false, err
-			} else {
-				return result.(bool), nil
-			}
-		}
-	} else {
-		return false, nil
-	}
+type EvaluationBody struct {
+	RequiredKeys []string               `json:"required_keys"`
+	Values       map[string]interface{} `json:"values"`
+	Condition    string                 `json:"condition"`
 }
 
-func CheckValidValues(required_keys []string, values map[string]interface{}) bool {
-	valid := true
-	for i := range required_keys {
-		if _, ok := values[required_keys[i]]; !ok {
-			valid = false
-		}
+func Evaluate(requiredKeys []string, values map[string]interface{}, condition string) { //(bool, error) {
+	bodyToEvaluate := EvaluationBody{}
+	bodyToEvaluate.RequiredKeys = requiredKeys
+	bodyToEvaluate.Values = values
+	bodyToEvaluate.Condition = condition
+	/*	bodyToEvaluate, err := json.Marshal(map[string]string{
+		"required_keys": requiredKeys,
+		"values":        values,
+		"condition":     condition,
+	})*/
+	bodyToRequest, err := json.Marshal(bodyToEvaluate)
+	response, err := http.Post("localhost:8082/evaluate", "application/json", bytes.NewBuffer(bodyToRequest))
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Fatalln(err)
 	}
-	return valid
+	log.Println(string(body))
 }
