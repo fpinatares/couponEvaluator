@@ -1,4 +1,4 @@
-package couponsEvaluator
+package couponEvaluator
 
 import (
 	"bytes"
