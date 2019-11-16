@@ -3,10 +3,14 @@ package couponEvaluator
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
+	"os"
 )
+
+// Global variables
+var configuration Configuration
 
 type EvaluationBody struct {
 	RequiredKeys []string               `json:"required_keys"`
@@ -14,22 +18,71 @@ type EvaluationBody struct {
 	Condition    string                 `json:"condition"`
 }
 
-func Evaluate(requiredKeys []string, values map[string]interface{}, condition string) { //(bool, error) {
-	bodyToEvaluate := EvaluationBody{}
+// Structs
+type Configuration struct {
+	Server string
+}
+
+// Functions
+func Evaluate(requiredKeys []string, values map[string]interface{}, condition string) string {
+	loadConfiguration()
+	bodyToEvaluate := MakeBody(requiredKeys, values, "total < amount")
+	headers := MakeHeaders()
+	evaluateEndpoint := "/evaluate"
+	response := doPost(configuration.Server+evaluateEndpoint, headers, bodyToEvaluate)
+	return string(response)
+}
+
+func loadConfiguration() {
+	file, _ := os.Open("config/config.json")
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	configuration = Configuration{}
+	err := decoder.Decode(&configuration)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func MakeHeaders() map[string]string {
+	headers := make(map[string]string)
+	headers["Content-Type"] = "application/json"
+	return headers
+}
+
+func MakeBody(requiredKeys []string, values map[string]interface{}, condition string) *bytes.Buffer {
+	var bodyToEvaluate EvaluationBody
 	bodyToEvaluate.RequiredKeys = requiredKeys
 	bodyToEvaluate.Values = values
 	bodyToEvaluate.Condition = condition
-	/*	bodyToEvaluate, err := json.Marshal(map[string]string{
-		"required_keys": requiredKeys,
-		"values":        values,
-		"condition":     condition,
-	})*/
-	bodyToRequest, err := json.Marshal(bodyToEvaluate)
-	response, err := http.Post("localhost:8082/evaluate", "application/json", bytes.NewBuffer(bodyToRequest))
-	//defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Fatalln(err)
+	body := new(bytes.Buffer)
+	json.NewEncoder(body).Encode(bodyToEvaluate)
+	return body
+}
+
+func doPost(url string, headers map[string]string, body *bytes.Buffer) []byte {
+	client := &http.Client{}
+	request, err := http.NewRequest("POST", url, body)
+	for key, value := range headers {
+		request.Header.Add(key, value)
 	}
-	log.Println(string(body))
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	} else {
+		defer response.Body.Close()
+		contents, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if response.StatusCode != http.StatusOK {
+			fmt.Println(response.StatusCode)
+			hdr := response.Header
+			for key, value := range hdr {
+				fmt.Println("   ", key, ":", value)
+			}
+		}
+		return contents
+	}
 }
