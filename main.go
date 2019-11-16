@@ -24,13 +24,16 @@ type EvaluationBody struct {
 }
 
 // Functions
-func Evaluate(requiredKeys []string, values map[string]interface{}, condition string) string {
+func Evaluate(requiredKeys []string, values map[string]interface{}, condition string) bool {
 	loadConfiguration()
 	bodyToEvaluate := MakeBody(requiredKeys, values, condition)
 	headers := MakeHeaders()
 	evaluateEndpoint := "/evaluate"
 	response := doPost(configuration.Server+evaluateEndpoint, headers, bodyToEvaluate)
-	return string(response)
+	if response == nil {
+		return false
+	}
+	return bool(response)
 }
 
 func loadConfiguration() {
