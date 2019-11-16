@@ -25,6 +25,7 @@ type Configuration struct {
 
 // Functions
 func Evaluate(requiredKeys []string, values map[string]interface{}, condition string) string {
+	fmt.Println(0)
 	loadConfiguration()
 	fmt.Println(1)
 	bodyToEvaluate := MakeBody(requiredKeys, values, "total < amount")
